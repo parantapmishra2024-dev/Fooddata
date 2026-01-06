@@ -3,6 +3,8 @@ requests
 pandas
 openpyxl
 pillow
-pyzbar
 opencv-python
 numpy
+streamlit-webrtc
+av
+opencv-python
