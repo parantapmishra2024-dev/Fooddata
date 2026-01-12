@@ -3,6 +3,8 @@ import requests
 import pandas as pd
 from PIL import Image
 import google.generativeai as genai
+import json
+import re
 
 # ---------------- Page Config ----------------
 st.set_page_config(page_title="Food Nutrition Analyzer", layout="centered")
@@ -11,6 +13,14 @@ st.title("Food Nutrition Analyzer")
 # ---------------- Gemini Setup ----------------
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 model = genai.GenerativeModel("gemini-2.0-flash")
+
+# ---------------- Helpers ----------------
+def extract_json(text):
+    text = re.sub(r"```json|```", "", text).strip()
+    match = re.search(r"\{.*\}", text, re.S)
+    if not match:
+        return None
+    return json.loads(match.group())
 
 # ---------------- Tabs ----------------
 tab1, tab2 = st.tabs(["Nutrition Analyzer", "Object Counter"])
@@ -99,7 +109,7 @@ with tab1:
                 )
 
 # ============================================================
-# TAB 2 — Object Counter (NEW)
+# TAB 2 — Object Counter (JSON Safe)
 # ============================================================
 with tab2:
     st.subheader("Upload an image to count objects")
@@ -114,21 +124,27 @@ with tab2:
             with st.spinner("Analyzing image..."):
 
                 prompt = """
-                Locate every individual object in this image.
-                For each object return its [ymin, xmin, ymax, xmax] bounding box.
-                Finally return the total count.
+You are a computer vision system.
+Return ONLY valid JSON. Do not use markdown. Do not use backticks. Do not explain.
 
-                Return strictly in JSON:
-                {
-                  "count": number,
-                  "boxes": [[ymin,xmin,ymax,xmax], ...]
-                }
-                """
+Detect all individual objects in the image.
+Return:
+{
+  "count": number,
+  "boxes": [[ymin, xmin, ymax, xmax], ...]
+}
+"""
 
                 response = model.generate_content(
                     [prompt, image],
                     generation_config={"temperature": 0.1}
                 )
 
-                st.subheader("Detection Result")
-                st.json(response.text)
+                parsed = extract_json(response.text)
+
+                if parsed:
+                    st.subheader("Detection Result")
+                    st.json(parsed)
+                else:
+                    st.error("Model did not return valid JSON.")
+                    st.text(response.text)
