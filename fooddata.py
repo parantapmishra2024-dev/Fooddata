@@ -2,17 +2,21 @@ import streamlit as st
 import requests
 import pandas as pd
 from PIL import Image
-from google import genai
+import google.generativeai as genai
 
 # ---------------- Page Config ----------------
 st.set_page_config(page_title="Food Nutrition Analyzer", layout="centered")
 st.title("Food Nutrition Analyzer")
 
+# ---------------- Gemini Setup ----------------
+genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+model = genai.GenerativeModel("gemini-2.0-flash")
+
 # ---------------- Tabs ----------------
 tab1, tab2 = st.tabs(["Nutrition Analyzer", "Object Counter"])
 
 # ============================================================
-# TAB 1 — EXISTING FEATURE (UNCHANGED)
+# TAB 1 — Nutrition Analyzer (UNCHANGED)
 # ============================================================
 with tab1:
     barcode = st.text_input("Enter Barcode", placeholder="e.g. 0011110119681")
@@ -95,7 +99,7 @@ with tab1:
                 )
 
 # ============================================================
-# TAB 2 — OBJECT COUNTING FEATURE
+# TAB 2 — Object Counter (NEW)
 # ============================================================
 with tab2:
     st.subheader("Upload an image to count objects")
@@ -108,23 +112,22 @@ with tab2:
 
         if st.button("Count Objects"):
             with st.spinner("Analyzing image..."):
-                client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
 
                 prompt = """
                 Locate every individual object in this image.
                 For each object return its [ymin, xmin, ymax, xmax] bounding box.
                 Finally return the total count.
-                Return in JSON format:
+
+                Return strictly in JSON:
                 {
                   "count": number,
                   "boxes": [[ymin,xmin,ymax,xmax], ...]
                 }
                 """
 
-                response = client.models.generate_content(
-                    model="gemini-2.0-flash",
-                    contents=[prompt, image],
-                    config={"temperature": 0.1}
+                response = model.generate_content(
+                    [prompt, image],
+                    generation_config={"temperature": 0.1}
                 )
 
                 st.subheader("Detection Result")
