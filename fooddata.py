@@ -109,7 +109,7 @@ with tab1:
                 )
 
 # ============================================================
-# TAB 2 — Object Counter (ONLY COUNT)
+# TAB 2 — Object Counter (JSON Safe)
 # ============================================================
 with tab2:
     st.subheader("Upload an image to count objects")
@@ -127,11 +127,11 @@ with tab2:
 You are a computer vision system.
 Return ONLY valid JSON. Do not use markdown. Do not use backticks. Do not explain.
 
-Count the total number of distinct objects in the image.
-
+Detect all individual objects in the image.
 Return:
 {
   "count": number
+  
 }
 """
 
@@ -142,9 +142,9 @@ Return:
 
                 parsed = extract_json(response.text)
 
-                if parsed and "count" in parsed:
-                    st.subheader("Total Objects Detected")
-                    st.metric(label="Count", value=int(parsed["count"]))
+                if parsed:
+                    st.subheader("Detection Result")
+                    st.json(parsed)
                 else:
-                    st.error("Model did not return a valid count.")
+                    st.error("Model did not return valid JSON.")
                     st.text(response.text)
