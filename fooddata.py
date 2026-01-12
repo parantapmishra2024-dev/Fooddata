@@ -144,7 +144,7 @@ Return:
 
                 if parsed:
                     st.subheader("Detection Result")
-                    st.metric(label="Count", value=int(parsed["count"]))
+                    st.metric(label="Count", value=parsed["count"])
         
                 else:
                     st.error("Model did not return valid JSON.")
